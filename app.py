@@ -23,6 +23,8 @@ CSS = """
     .btn { background: #000; color: #fff; padding: 18px; border-radius: 12px; cursor: pointer; font-size: 1.4rem; font-weight: bold; width: 100%; border: none; margin-top: 25px; transition: 0.3s; text-decoration: none; display: block; }
     .btn:hover { transform: scale(1.02); background: #222; }
     select, input { font-size: 1.1rem; padding: 12px; width: 100%; margin-top: 15px; border-radius: 10px; border: 2px solid #eee; outline: none; }
+    footer { margin-top: auto; padding: 20px; }
+    .footer-link { color: #fff; text-decoration: none; font-size: 0.9rem; font-weight: bold; text-shadow: 1px 1px 3px #000; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; font-size: 0.7rem; border-radius: 10px; overflow: hidden; }
     th, td { border: 1px solid #eee; padding: 8px; text-align: center; }
     th { background: #000; color: #fff; }
@@ -33,13 +35,15 @@ def get_html(content):
     return f"""<html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>{CSS}</head>
     <body onclick="document.getElementById('bgMusic').play()">
     <audio id='bgMusic' loop autoplay><source src='https://files.catbox.moe/mcy4cu.mp3' type='audio/mpeg'></audio>
-    <div class='card'>{content}</div></body></html>"""
+    <div class='card'>{content}</div>
+    <footer><a href='/admin-login' class='footer-link'>@2026 AlexCloud</a></footer></body></html>"""
 
 @app.route('/')
 def home():
     game_opts = "".join([f"<option value='{g}'>{g}</option>" for g in GAMES])
     time_opts = "".join([f"<option value='{d}'>{d}</option>" for d in DURATIONS])
-    content = f"<h1>AlexCloud Cheat</h1><select id='game'>{game_opts}</select><select id='duration'>{time_opts}</select><button class='btn' onclick=\"window.location.href='/get-key?game='+document.getElementById('game').value+'&dur='+document.getElementById('duration').value\">NHẬN KEY</button>"
+    admin_btn = f"<a href='/admin-login' class='btn' style='background:green'>TẠO KEY NHANH (KHÔNG VƯỢT)</a>" if session.get('admin') else ""
+    content = f"<h1>AlexCloud Cheat</h1><select id='game'>{game_opts}</select><select id='duration'>{time_opts}</select><button class='btn' onclick=\"window.location.href='/get-key?game='+document.getElementById('game').value+'&dur='+document.getElementById('duration').value\">NHẬN KEY</button>{admin_btn}"
     return render_template_string(get_html(content))
 
 @app.route('/get-key')
@@ -74,7 +78,7 @@ def verify():
     k = request.args.get('key')
     dur = request.args.get('dur', '1 Ngày')
     js = f"<script>function copy(){{navigator.clipboard.writeText('{k}'); let b=document.getElementById('cpBtn'); b.innerText='ĐÃ COPY!'; b.style.background='#28a745'; setTimeout(()=>{{b.innerText='NHẬN LẠI KEY'; b.style.background='#000';}}, 2000);}}</script>"
-    return render_template_string(get_html(f"{js}<h1>KEY CỦA BẠN:</h1><h1 style='color:red'>{k}</h1><p>Thời hạn: <b>{dur}</b></p><button id='cpBtn' class='btn' onclick='copy()'>NHẤN ĐỂ COPY</button><br><br><a href='/'>Về trang chủ</a>"))
+    return render_template_string(get_html(f"{js}<h1>KEY CỦA BẠN:</h1><h1 style='color:red'>{k}</h1><p>Thời hạn: <b>{dur}</b></p><button id='cpBtn' class='btn' onclick='copy()'>NHẬN LẠI KEY</button><br><br><a href='/'>Về trang chủ</a>"))
 
 @app.route('/admin-login', methods=['GET', 'POST'])
 def admin_login():
