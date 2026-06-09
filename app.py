@@ -59,7 +59,7 @@ CSS = """
 def get_html(content):
     return f"""<html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>{CSS}</head>
     <body onclick="document.getElementById('bgMusic').play()">
-    <audio id="bgMusic" loop autoplay><source src='https://files.catbox.moe/5rqwul.mp3' type='audio/mpeg'></audio>
+    <audio id="bgMusic" loop autoplay><source src='https://files.catbox.moe/mcy4cu.mp3' type='audio/mpeg'></audio>
     <script>window.onload = function() {{ document.getElementById('bgMusic').play(); }}</script>
     <div class='card'>{content}</div>
     <footer><a href='/admin-login' class='footer-link'>@2026 AlexCloud</a></footer></body></html>"""
