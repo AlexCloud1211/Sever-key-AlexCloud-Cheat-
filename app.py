@@ -85,8 +85,6 @@ def get_key():
     dur = request.args.get('dur', '1 Ngày')
     k = f"AlexCloud-{''.join(random.choices(string.ascii_uppercase, k=3))}-{''.join(random.choices(string.digits, k=3))}"
     all_keys.append({'key': k, 'game': game, 'dev': '1', 'exp': dur, 'time': datetime.now().strftime("%H:%M:%S")})
-    
-    url = f"https://link4m.co/api-shorten/v2?api={LINK4M_API}&url=https://alexcloud-ukf8.onrender.com/verify?key={k}&dur={dur}"
     try: return redirect(requests.get(url).json()['shortenedUrl'])
     except: return "Lỗi API!"
 
