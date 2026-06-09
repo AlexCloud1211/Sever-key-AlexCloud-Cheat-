@@ -1,5 +1,6 @@
 from flask import Flask, render_template_string, request, redirect, session
 import random, string, requests, os, urllib.parse
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'alexcloud_secret_key_2026'
@@ -10,7 +11,6 @@ ADMIN_PIN = "121113"
 MEMBER_CODE = "123567"
 GAMES = ["FREE FIRE MAX", "FREE FIRE"]
 DUR_LIMITS = {"12 Giờ": 1, "1 Ngày": 2}
-BASE_URL = "https://alexcloud-ukf8.onrender.com"
 
 CSS = """
 <style>
@@ -43,33 +43,39 @@ def home():
 
 @app.route('/get-key')
 def get_key():
-    game, dur, code = request.args.get('game'), request.args.get('dur'), request.args.get('member_code')
+    game = request.args.get('game')
+    dur = request.args.get('dur')
+    code = request.args.get('member_code')
+    
     if code == MEMBER_CODE:
         k = f"AlexCloud-{''.join(random.choices(string.ascii_uppercase, k=3))}"
         return redirect(f"/verify?key={k}&dur={dur}")
+
     html = f"<h1>Xác thực</h1><form action='/get-key' method='GET'><input type='hidden' name='game' value='{game}'><input type='hidden' name='dur' value='{dur}'><input type='password' name='member_code' placeholder='Mã thành viên...' required><button class='btn'>XÁC NHẬN</button></form><a href='/get-key-link?game={game}&dur={dur}&step=1' class='btn' style='background:#d9534f'>KHÔNG CÓ MÃ (VƯỢT {DUR_LIMITS[dur]} LẦN)</a>"
     return render_template_string(get_html(html))
 
 @app.route('/get-key-link')
 def get_key_link():
-    game, dur = request.args.get('game'), request.args.get('dur')
+    game = request.args.get('game')
+    dur = request.args.get('dur')
     step = int(request.args.get('step', 1))
     limit = DUR_LIMITS.get(dur, 1)
     
     if step <= limit:
-        # Chuyển hướng tới link rút gọn, khi xong sẽ quay về chính trang này với step + 1
-        return_url = f"{BASE_URL}/get-key-link?game={game}&dur={dur}&step={step+1}"
-        api_url = f"https://link4m.co/api-shorten/v2?api={LINK4M_API}&url={urllib.parse.quote(return_url)}"
+        next_step = step + 1
+        target_url = f"https://alexcloud-ukf8.onrender.com/get-key-link?game={game}&dur={dur}&step={next_step}"
+        api_url = f"https://link4m.co/api-shorten/v2?api={LINK4M_API}&url={urllib.parse.quote(target_url)}"
         try:
             return redirect(requests.get(api_url, timeout=10).json()['shortenedUrl'])
-        except: return "Lỗi API, vui lòng thử lại!"
+        except: return "Lỗi API"
     
     k = f"AlexCloud-{''.join(random.choices(string.ascii_uppercase, k=3))}"
     return redirect(f"/verify?key={k}&dur={dur}")
 
 @app.route('/verify')
 def verify():
-    k, dur = request.args.get('key'), request.args.get('dur')
+    k = request.args.get('key')
+    dur = request.args.get('dur')
     js = f"<script>function copy(){{navigator.clipboard.writeText('{k}'); document.getElementById('cpBtn').innerText='ĐÃ COPY!'; setTimeout(()=>{{document.getElementById('cpBtn').innerText='NHẬN LẠI KEY';}}, 2000);}}</script>"
     return render_template_string(get_html(f"{js}<h1>KEY CỦA BẠN:</h1><h1 style='color:red'>{k}</h1><p>Thời hạn: {dur}</p><button id='cpBtn' class='btn' onclick='copy()'>NHẤN ĐỂ COPY</button><a href='/' class='btn'>VỀ TRANG CHỦ</a>"))
 
