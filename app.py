@@ -8,6 +8,7 @@ app.secret_key = 'alexcloud_secret_key_2026'
 # --- CẤU HÌNH ---
 LINK4M_API = "6a27be48f348053ba11f3502"
 ADMIN_PIN = "121113"
+MEMBER_CODE = "123567"
 all_keys = []
 GAMES = ["FREE FIRE MAX", "FREE FIRE"]
 DURATIONS = ["12 Giờ", "1 Ngày"]
@@ -21,7 +22,7 @@ CSS = """
     h1 { font-size: 2.8rem; animation: colorChange 4s infinite; font-weight: 800; margin-bottom: 20px; }
     .btn { background: #000; color: #fff; padding: 18px; border-radius: 12px; cursor: pointer; font-size: 1.4rem; font-weight: bold; width: 100%; border: none; margin-top: 25px; transition: 0.3s; text-decoration: none; display: block; }
     .btn:hover { transform: scale(1.02); background: #222; }
-    select { font-size: 1.1rem; padding: 12px; width: 100%; margin-top: 15px; border-radius: 10px; border: 2px solid #eee; outline: none; background: #fff; }
+    select, input { font-size: 1.1rem; padding: 12px; width: 100%; margin-top: 15px; border-radius: 10px; border: 2px solid #eee; outline: none; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; font-size: 0.7rem; border-radius: 10px; overflow: hidden; }
     th, td { border: 1px solid #eee; padding: 8px; text-align: center; }
     th { background: #000; color: #fff; }
@@ -32,22 +33,35 @@ def get_html(content):
     return f"""<html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>{CSS}</head>
     <body onclick="document.getElementById('bgMusic').play()">
     <audio id='bgMusic' loop autoplay><source src='https://files.catbox.moe/mcy4cu.mp3' type='audio/mpeg'></audio>
-    <div class='card'>{content}</div>
-    </body></html>"""
+    <div class='card'>{content}</div></body></html>"""
 
 @app.route('/')
 def home():
     game_opts = "".join([f"<option value='{g}'>{g}</option>" for g in GAMES])
     time_opts = "".join([f"<option value='{d}'>{d}</option>" for d in DURATIONS])
-    content = f"<h1>AlexCloud Cheat</h1><label>Chọn Game:</label><select id='game'>{game_opts}</select><label style='display:block; margin-top:15px;'>Chọn Thời Hạn:</label><select id='duration'>{time_opts}</select><button class='btn' onclick=\"window.location.href='/get-key?game='+document.getElementById('game').value+'&dur='+document.getElementById('duration').value\">NHẬN KEY</button>"
+    content = f"<h1>AlexCloud Cheat</h1><select id='game'>{game_opts}</select><select id='duration'>{time_opts}</select><button class='btn' onclick=\"window.location.href='/get-key?game='+document.getElementById('game').value+'&dur='+document.getElementById('duration').value\">NHẬN KEY</button>"
     return render_template_string(get_html(content))
 
 @app.route('/get-key')
 def get_key():
     game = request.args.get('game', 'FREE FIRE MAX')
     dur = request.args.get('dur', '1 Ngày')
+    member_code = request.args.get('member_code')
+    
+    if member_code == MEMBER_CODE:
+        k = f"AlexCloud-{''.join(random.choices(string.ascii_uppercase, k=3))}-{''.join(random.choices(string.digits, k=3))}"
+        all_keys.append({'key': k, 'game': game, 'dev': 'User', 'exp': dur, 'time': datetime.now().strftime("%H:%M:%S")})
+        return redirect(f"/verify?key={k}&dur={dur}")
+
+    html = f"<h1>Xác thực</h1><form action='/get-key' method='GET'><input type='hidden' name='game' value='{game}'><input type='hidden' name='dur' value='{dur}'><input type='password' name='member_code' placeholder='Nhập mã thành viên...' required><button class='btn'>XÁC NHẬN</button></form><a href='/get-key-link?game={game}&dur={dur}' class='btn' style='background:#d9534f'>TÔI KHÔNG CÓ MÃ (VƯỢT LINK)</a>"
+    return render_template_string(get_html(html))
+
+@app.route('/get-key-link')
+def get_key_link():
+    game = request.args.get('game')
+    dur = request.args.get('dur')
     k = f"AlexCloud-{''.join(random.choices(string.ascii_uppercase, k=3))}-{''.join(random.choices(string.digits, k=3))}"
-    all_keys.append({'key': k, 'game': game, 'dev': '1', 'exp': dur, 'time': datetime.now().strftime("%H:%M:%S")})
+    all_keys.append({'key': k, 'game': game, 'dev': 'Guest', 'exp': dur, 'time': datetime.now().strftime("%H:%M:%S")})
     target_url = f"https://alexcloud-ukf8.onrender.com/verify?key={k}&dur={dur}"
     api_url = f"https://link4m.co/api-shorten/v2?api={LINK4M_API}&url={urllib.parse.quote(target_url)}"
     try:
@@ -66,18 +80,14 @@ def verify():
 def admin_login():
     if request.method == 'POST' and request.form.get('pin') == ADMIN_PIN:
         session['admin'] = True
-    
     if session.get('admin'):
         if request.form.get('create'):
             k = f"AlexCloud-{''.join(random.choices(string.ascii_uppercase, k=3))}-{''.join(random.choices(string.digits, k=3))}"
-            all_keys.append({'key': k, 'game': request.form.get('game'), 'dev': request.form.get('dev'), 'exp': request.form.get('time'), 'time': datetime.now().strftime("%H:%M:%S")})
-            # Tự động chuyển đến trang Verify sau khi tạo
+            all_keys.append({'key': k, 'game': request.form.get('game'), 'dev': 'Admin', 'exp': request.form.get('time'), 'time': datetime.now().strftime("%H:%M:%S")})
             return redirect(f"/verify?key={k}&dur={request.form.get('time')}")
-        
         rows = "".join([f"<tr><td>{i['key']}</td><td>{i['game']}</td><td>{i['dev']}</td><td>{i['exp']}</td><td>{i['time']}</td></tr>" for i in all_keys])
-        return render_template_string(get_html(f"<h1>ADMIN</h1><form method='POST'><input type='hidden' name='pin' value='{ADMIN_PIN}'>Game: <select name='game'>{''.join([f'<option>{g}</option>' for g in GAMES])}</select><br>TBI: <input name='dev' value='1' style='width:30px'> Hạn: <select name='time'><option value='12 Giờ'>12 Giờ</option><option value='1 Ngày'>1 Ngày</option></select><button name='create' value='1' class='btn' style='font-size:1rem'>TẠO KEY (KHÔNG VƯỢT)</button></form><table><tr><th>KEY</th><th>GAME</th><th>TBI</th><th>HẠN</th><th>LÚC TẠO</th></tr>{rows}</table><br><a href='/admin-logout' class='btn' style='font-size:1rem; background:red'>ĐĂNG XUẤT</a>"))
-    
-    return render_template_string(get_html("<h1>NHẬP PIN</h1><form method='POST'><input name='pin' type='password' style='padding:15px; width:80%; border-radius:10px;'><br><button class='btn'>XÁC NHẬN</button></form>"))
+        return render_template_string(get_html(f"<h1>ADMIN</h1><form method='POST'>Game: <select name='game'>{''.join([f'<option>{g}</option>' for g in GAMES])}</select><br>TBI: <input name='dev' value='1' style='width:30px'> Hạn: <select name='time'><option value='12 Giờ'>12 Giờ</option><option value='1 Ngày'>1 Ngày</option></select><button name='create' value='1' class='btn'>TẠO KEY (KHÔNG VƯỢT)</button></form><table><tr><th>KEY</th><th>GAME</th><th>DEV</th><th>HẠN</th><th>LÚC TẠO</th></tr>{rows}</table><br><a href='/admin-logout' class='btn' style='background:red'>ĐĂNG XUẤT</a>"))
+    return render_template_string(get_html("<h1>NHẬP PIN</h1><form method='POST'><input name='pin' type='password'><button class='btn'>XÁC NHẬN</button></form>"))
 
 @app.route('/admin-logout')
 def logout():
