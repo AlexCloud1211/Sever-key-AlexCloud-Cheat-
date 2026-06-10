@@ -17,9 +17,15 @@ all_keys = []
 def get_vn_time():
     return (datetime.utcnow() + timedelta(hours=7)).strftime("%H:%M:%S")
 
-# Hàm gọi API Link4m để lấy link vượt
+def generate_unique_key():
+    while True:
+        k = f"AlexCloud-{''.join(random.choices(string.ascii_uppercase, k=3))}-{''.join(random.choices(string.digits, k=3))}"
+        if not any(item['key'] == k for item in all_keys): return k
+
 def get_bypass_link():
-    target_url = urllib.parse.quote(f"{MY_DOMAIN}/get-key?auto_key=true")
+    # Thêm tham số ngẫu nhiên vào URL để Link4m luôn tạo link mới
+    ts = random.randint(100000, 999999)
+    target_url = urllib.parse.quote(f"{MY_DOMAIN}/get-key?auto_key=true&ts={ts}")
     api_url = f"https://link4m.co/api-shorten/v2?api={LINK4M_API}&url={target_url}"
     try:
         response = requests.get(api_url, timeout=5).json()
@@ -43,11 +49,6 @@ LANGS = {
 }
 
 def get_l(): return LANGS.get(session.get('lang', 'VN'), LANGS['VN'])
-
-def generate_unique_key():
-    while True:
-        k = f"AlexCloud-{''.join(random.choices(string.ascii_uppercase, k=3))}-{''.join(random.choices(string.digits, k=3))}"
-        if not any(item['key'] == k for item in all_keys): return k
 
 CSS = """
 <style>
@@ -78,7 +79,6 @@ def home():
 
 @app.route('/get-key', methods=['GET', 'POST'])
 def get_key():
-    # Tự động cấp Key sau khi vượt link
     if request.args.get('auto_key') == "true":
         k = generate_unique_key()
         all_keys.append({'key': k, 'tbi': '1', 'day': '1', 'time': get_vn_time()})
