@@ -14,8 +14,8 @@ all_keys = []
 
 # Từ điển ngôn ngữ
 LANGS = {
-    'VN': {'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Thời hạn: 1 Ngày', 'btn': 'GET KEY', 'copy': '(Nhấn vào Key để copy)'},
-    'EN': {'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Duration: 1 Day', 'btn': 'GET KEY', 'copy': '(Click Key to copy)'}
+    'VN': {'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Thời hạn: 1 Ngày', 'btn': 'GET KEY', 'copy': '(Nhấn vào Key để copy)', 'status': 'Trạng thái: Online'},
+    'EN': {'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Duration: 1 Day', 'btn': 'GET KEY', 'copy': '(Click Key to copy)', 'status': 'Status: Online'}
 }
 
 def generate_unique_key():
@@ -26,33 +26,36 @@ def generate_unique_key():
 CSS = """
 <style>
     @keyframes bgChange { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
-    body { background: linear-gradient(-45deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); background-size: 400% 400%; animation: bgChange 10s ease infinite; font-family: sans-serif; display: flex; flex-direction: column; min-height: 100vh; margin: 0; padding: 20px; align-items: center; }
-    .top-bar { position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 10px; }
+    body { background: linear-gradient(-45deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); background-size: 400% 400%; animation: bgChange 10s ease infinite; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; min-height: 100vh; margin: 0; padding: 20px; align-items: center; }
+    .top-bar { position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 12px; z-index: 100; }
     .flag { font-size: 20px; cursor: pointer; text-decoration: none; }
-    .tg-btn { text-decoration: none; font-size: 24px; }
+    .tg-icon { width: 32px; height: 32px; fill: #fff; filter: drop-shadow(0 0 2px #000); }
     .content-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
-    .card { background: rgba(255,255,255,0.95); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
-    .btn { background: #000; color: #fff; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; border: none; margin-top: 15px; display: block; text-decoration: none; }
-    #keyBox { color: red; font-size: 1.5rem; cursor: pointer; border: 2px dashed red; padding: 10px; border-radius: 10px; margin: 15px 0; }
-    footer { padding: 20px; color: #fff; font-weight: bold; }
+    .card { background: rgba(255,255,255,0.95); padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .btn { background: #000; color: #fff; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; border: none; margin-top: 15px; display: block; text-decoration: none; transition: 0.3s; }
+    .btn:hover { background: #333; transform: scale(1.02); }
+    #keyBox { color: #d00; font-size: 1.6rem; cursor: pointer; border: 2px dashed #d00; padding: 12px; border-radius: 10px; margin: 15px 0; font-weight: bold; }
+    footer { padding: 20px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; }
     footer a { color: #fff; text-decoration: none; }
-    .info-box { font-weight: bold; font-size: 1.2rem; color: #333; margin: 10px 0; }
+    .info-box { font-weight: bold; font-size: 1.1rem; color: #333; margin: 5px 0; }
+    .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; background: #28a745; color: white; font-size: 0.8rem; margin-bottom: 10px; }
     table { width: 100%; border-collapse: collapse; font-size: 0.7rem; color: #000; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 5px; text-align: center; }
 </style>
 """
 
 def get_html(content):
+    tg_svg = """<a href='https://t.me/AlexCloud3' target='_blank'><svg class='tg-icon' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.07-.19-.05-.27-.03-.12.02-1.93 1.23-5.45 3.62-.51.35-.98.52-1.39.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.46-.41-1.4-.85.03-.23.35-.47 1.01-.71 3.93-1.72 6.55-2.86 7.85-3.41 3.74-1.59 4.52-1.86 5.02-1.87.11 0 .37.03.54.17.14.12.19.28.21.45-.02.07-.03.14-.05.21z'/></svg></a>"""
     js = "<script>function copyKey(){var k=document.getElementById('keyBox').innerText;navigator.clipboard.writeText(k);alert('Đã copy: '+k);}</script>"
     return f"""<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>{CSS}</head>
     <body>
         <div class='top-bar'>
             <a href='/lang/VN' class='flag'>🇻🇳</a>
             <a href='/lang/EN' class='flag'>🇬🇧</a>
-            <a href='https://t.me/AlexCloud3' class='tg-btn'>✈️</a>
+            {tg_svg}
         </div>
         <audio autoplay loop><source src='https://files.catbox.moe/mcy4cu.mp3'></audio>
-        <div class='content-wrapper'><div class='card'>{content}</div></div>
+        <div class='content-wrapper'><div class='card'><div class='status-badge'>● System Online</div>{content}</div></div>
         <footer><a href='/admin-login'>@2026 AlexCloud</a></footer>
         {js}
     </body></html>"""
@@ -65,7 +68,7 @@ def set_lang(lang):
 @app.route('/')
 def home():
     l = LANGS.get(session.get('lang', 'VN'), LANGS['VN'])
-    content = f"<h1>{l['title']}</h1><div class='info-box'>{l['game']}</div><div class='info-box'>{l['time']}</div><a href='/get-key' class='btn'>{l['btn']}</a>"
+    content = f"<h1>{l['title']}</h1><div class='info-box'>{l['game']}</div><div class='info-box'>{l['time']}</div><p style='color:green; font-weight:bold'>{l['status']}</p><a href='/get-key' class='btn'>{l['btn']}</a>"
     return render_template_string(get_html(content))
 
 @app.route('/get-key')
