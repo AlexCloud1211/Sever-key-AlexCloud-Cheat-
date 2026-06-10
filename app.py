@@ -5,11 +5,18 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'alexcloud_secret_key_2026'
 
+# --- CẤU HÌNH ---
 LINK4M_API = "6a27be48f348053ba11f3502"
 ADMIN_PIN = "121113"
 MEMBER_CODE = "123567"
 MY_DOMAIN = "https://sever-key-alexcloud-cheat.onrender.com"
 all_keys = []
+
+# Từ điển ngôn ngữ
+LANGS = {
+    'VN': {'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Thời hạn: 1 Ngày', 'btn': 'GET KEY', 'copy': '(Nhấn vào Key để copy)'},
+    'EN': {'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Duration: 1 Day', 'btn': 'GET KEY', 'copy': '(Click Key to copy)'}
+}
 
 def generate_unique_key():
     while True:
@@ -20,7 +27,9 @@ CSS = """
 <style>
     @keyframes bgChange { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
     body { background: linear-gradient(-45deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); background-size: 400% 400%; animation: bgChange 10s ease infinite; font-family: sans-serif; display: flex; flex-direction: column; min-height: 100vh; margin: 0; padding: 20px; align-items: center; }
-    .tg-btn { position: absolute; top: 15px; right: 15px; width: 35px; height: 35px; }
+    .top-bar { position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 10px; }
+    .flag { font-size: 20px; cursor: pointer; text-decoration: none; }
+    .tg-btn { text-decoration: none; font-size: 24px; }
     .content-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
     .card { background: rgba(255,255,255,0.95); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
     .btn { background: #000; color: #fff; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; border: none; margin-top: 15px; display: block; text-decoration: none; }
@@ -28,27 +37,35 @@ CSS = """
     footer { padding: 20px; color: #fff; font-weight: bold; }
     footer a { color: #fff; text-decoration: none; }
     .info-box { font-weight: bold; font-size: 1.2rem; color: #333; margin: 10px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.7rem; color: #000; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 5px; text-align: center; }
 </style>
 """
 
 def get_html(content):
-    tg_icon = """<a href='https://t.me/AlexCloud3' class='tg-btn'><svg viewBox='0 0 24 24' fill='#fff'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.07-.19-.05-.27-.03-.12.02-1.93 1.23-5.45 3.62-.51.35-.98.52-1.39.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.46-.41-1.4-.85.03-.23.35-.47 1.01-.71 3.93-1.72 6.55-2.86 7.85-3.41 3.74-1.59 4.52-1.86 5.02-1.87.11 0 .37.03.54.17.14.12.19.28.21.45-.02.07-.03.14-.05.21z'/></svg></a>"""
+    js = "<script>function copyKey(){var k=document.getElementById('keyBox').innerText;navigator.clipboard.writeText(k);alert('Đã copy: '+k);}</script>"
     return f"""<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>{CSS}</head>
     <body>
-        {tg_icon}
+        <div class='top-bar'>
+            <a href='/lang/VN' class='flag'>🇻🇳</a>
+            <a href='/lang/EN' class='flag'>🇬🇧</a>
+            <a href='https://t.me/AlexCloud3' class='tg-btn'>✈️</a>
+        </div>
         <audio autoplay loop><source src='https://files.catbox.moe/mcy4cu.mp3'></audio>
         <div class='content-wrapper'><div class='card'>{content}</div></div>
         <footer><a href='/admin-login'>@2026 AlexCloud</a></footer>
+        {js}
     </body></html>"""
+
+@app.route('/lang/<lang>')
+def set_lang(lang):
+    session['lang'] = lang
+    return redirect('/')
 
 @app.route('/')
 def home():
-    content = """
-    <h1>AlexCloud Cheat</h1>
-    <div class='info-box'>Game: Free Fire</div>
-    <div class='info-box'>Thời hạn: 1 Ngày</div>
-    <a href='/get-key' class='btn'>NHẬN KEY NGAY</a>
-    """
+    l = LANGS.get(session.get('lang', 'VN'), LANGS['VN'])
+    content = f"<h1>{l['title']}</h1><div class='info-box'>{l['game']}</div><div class='info-box'>{l['time']}</div><a href='/get-key' class='btn'>{l['btn']}</a>"
     return render_template_string(get_html(content))
 
 @app.route('/get-key')
@@ -73,7 +90,8 @@ def get_key_link():
 @app.route('/verify')
 def verify():
     k = request.args.get('key')
-    return render_template_string(get_html(f"<h1>KEY:</h1><h2 id='keyBox' onclick='navigator.clipboard.writeText(\"{k}\");alert(\"Đã copy\");'>{k}</h2><p>(Nhấn vào Key để copy)</p><a href='/' class='btn'>VỀ TRANG CHỦ</a>"))
+    l = LANGS.get(session.get('lang', 'VN'), LANGS['VN'])
+    return render_template_string(get_html(f"<h1>KEY:</h1><h2 id='keyBox' onclick='copyKey()'>{k}</h2><p>{l['copy']}</p><a href='/' class='btn'>VỀ TRANG CHỦ</a>"))
 
 @app.route('/admin-login', methods=['GET', 'POST'])
 def admin():
@@ -93,4 +111,5 @@ def logout():
     return redirect('/')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
