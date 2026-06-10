@@ -1,6 +1,6 @@
-From flask import Flask, render_template_string, request, redirect, session
+from flask import Flask, render_template_string, request, redirect, session
 import random, string, requests, os, urllib.parse
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = 'alexcloud_secret_key_2026'
@@ -12,7 +12,11 @@ MEMBER_CODE = "123567"
 MY_DOMAIN = "https://sever-key-alexcloud-cheat.onrender.com"
 all_keys = []
 
-# Dữ liệu ngôn ngữ cho toàn bộ các trang
+# Hàm lấy giờ Việt Nam chuẩn (Giờ:Phút:Giây)
+def get_vn_time():
+    return (datetime.utcnow() + timedelta(hours=7)).strftime("%H:%M:%S")
+
+# Dữ liệu ngôn ngữ
 LANGS = {
     'VN': {
         'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Thời hạn: 1 Ngày', 
@@ -61,7 +65,7 @@ def get_html(content):
     return f"""<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>{CSS}</head>
     <body>
         <div class='top-bar'><a href='/lang/VN' class='flag'>🇻🇳</a><a href='/lang/EN' class='flag'>🇬🇧</a>{tg_svg}</div>
-        <audio autoplay loop><source src='https://files.catbox.moe/mcy4cu.mp3'></audio>
+        <audio autoplay loop><source src='https://files.catbox.moe/5rqwul.mp3'></audio>
         <div class='content-wrapper'><div class='card'><div class='status-badge'>● System Online</div>{content}</div></div>
         <footer><a href='/admin-login'>@2026 AlexCloud</a></footer>{js}
     </body></html>"""
@@ -82,7 +86,8 @@ def get_key():
     code = request.args.get('member_code')
     if code == MEMBER_CODE:
         k = generate_unique_key()
-        all_keys.append({'key': k, 'tbi': '1', 'day': '1', 'time': datetime.now().strftime("%H:%M")})
+        # Lưu thời gian với giây
+        all_keys.append({'key': k, 'tbi': '1', 'day': '1', 'time': get_vn_time()})
         return redirect(f"/verify?key={k}")
     return render_template_string(get_html(f"<h1>{l['auth_title']}</h1><form action='/get-key' method='GET'><input name='member_code' placeholder='{l['auth_input']}' required><button class='btn'>{l['auth_btn']}</button></form><a href='/get-key-link' class='btn' style='background:#d9534f'>{l['link_btn']}</a>"))
 
@@ -97,10 +102,11 @@ def admin():
     if request.method == 'POST':
         if request.form.get('pin') == ADMIN_PIN: session['admin'] = True
         elif session.get('admin') and request.form.get('create'):
-            all_keys.append({'key': generate_unique_key(), 'tbi': request.form.get('tbi'), 'day': request.form.get('day'), 'time': datetime.now().strftime("%H:%M")})
+            all_keys.append({'key': generate_unique_key(), 'tbi': request.form.get('tbi'), 'day': request.form.get('day'), 'time': get_vn_time()})
     if session.get('admin'):
-        rows = "".join([f"<tr><td>{i['key']}</td><td>{i['tbi']}</td><td>{i['day']}</td><td>{i['time']}</td></tr>" for i in all_keys])
-        return render_template_string(get_html(f"<h1>LOG ADMIN</h1><form method='POST'><input name='tbi' placeholder='TBI' required><input name='day' placeholder='Ngày' required><button name='create' value='1' class='btn'>TẠO KEY</button></form><table><tr><th>KEY</th><th>TBI</th><th>D</th><th>TIME</th></tr>{rows}</table><br><a href='/admin-logout' class='btn' style='background:red'>ĐĂNG XUẤT</a>"))
+        # Tách mỗi key ra một dòng bằng cách dùng thẻ <div> bao quanh từng hàng
+        rows = "".join([f"<div style='border-bottom: 1px solid #ccc; padding: 8px; text-align: left;'><b>Key:</b> {i['key']} <br> <b>TBI:</b> {i['tbi']} | <b>D:</b> {i['day']} | <b>TIME:</b> {i['time']}</div>" for i in all_keys])
+        return render_template_string(get_html(f"<h1>LOG ADMIN</h1><form method='POST'><input name='tbi' placeholder='TBI' required><input name='day' placeholder='Ngày' required><button name='create' value='1' class='btn'>TẠO KEY</button></form><div style='margin-top:20px;'>{rows}</div><br><a href='/admin-logout' class='btn' style='background:red'>ĐĂNG XUẤT</a>"))
     return render_template_string(get_html("<h1>ADMIN</h1><form method='POST'><input name='pin' type='password'><button class='btn'>ĐĂNG NHẬP</button></form>"))
 
 @app.route('/admin-logout')
