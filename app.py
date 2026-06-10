@@ -12,11 +12,24 @@ MEMBER_CODE = "123567"
 MY_DOMAIN = "https://sever-key-alexcloud-cheat.onrender.com"
 all_keys = []
 
-# Từ điển ngôn ngữ
+# Dữ liệu ngôn ngữ cho toàn bộ các trang
 LANGS = {
-    'VN': {'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Thời hạn: 1 Ngày', 'btn': 'GET KEY', 'copy': '(Nhấn vào Key để copy)', 'status': 'Trạng thái: Online'},
-    'EN': {'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Duration: 1 Day', 'btn': 'GET KEY', 'copy': '(Click Key to copy)', 'status': 'Status: Online'}
+    'VN': {
+        'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Thời hạn: 1 Ngày', 
+        'btn': 'GET KEY', 'copy': '(Nhấn vào Key để copy)', 'status': 'Trạng thái: Online',
+        'auth_title': 'Xác thực', 'auth_input': 'Mã thành viên...', 'auth_btn': 'XÁC NHẬN', 
+        'link_btn': 'VƯỢT LINK', 'key_title': 'KEY CỦA BẠN:', 'back': 'VỀ TRANG CHỦ'
+    },
+    'EN': {
+        'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Duration: 1 Day', 
+        'btn': 'GET KEY', 'copy': '(Click Key to copy)', 'status': 'Status: Online',
+        'auth_title': 'Authentication', 'auth_input': 'Member code...', 'auth_btn': 'CONFIRM', 
+        'link_btn': 'BYPASS LINK', 'key_title': 'YOUR KEY:', 'back': 'BACK TO HOME'
+    }
 }
+
+def get_l():
+    return LANGS.get(session.get('lang', 'VN'), LANGS['VN'])
 
 def generate_unique_key():
     while True:
@@ -39,62 +52,45 @@ CSS = """
     footer a { color: #fff; text-decoration: none; }
     .info-box { font-weight: bold; font-size: 1.1rem; color: #333; margin: 5px 0; }
     .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; background: #28a745; color: white; font-size: 0.8rem; margin-bottom: 10px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.7rem; color: #000; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 5px; text-align: center; }
 </style>
 """
 
 def get_html(content):
     tg_svg = """<a href='https://t.me/AlexCloud3' target='_blank'><svg class='tg-icon' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.07-.19-.05-.27-.03-.12.02-1.93 1.23-5.45 3.62-.51.35-.98.52-1.39.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.46-.41-1.4-.85.03-.23.35-.47 1.01-.71 3.93-1.72 6.55-2.86 7.85-3.41 3.74-1.59 4.52-1.86 5.02-1.87.11 0 .37.03.54.17.14.12.19.28.21.45-.02.07-.03.14-.05.21z'/></svg></a>"""
-    js = "<script>function copyKey(){var k=document.getElementById('keyBox').innerText;navigator.clipboard.writeText(k);alert('Đã copy: '+k);}</script>"
+    js = "<script>function copyKey(){var k=document.getElementById('keyBox').innerText;navigator.clipboard.writeText(k);alert('Copy: '+k);}</script>"
     return f"""<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>{CSS}</head>
     <body>
-        <div class='top-bar'>
-            <a href='/lang/VN' class='flag'>🇻🇳</a>
-            <a href='/lang/EN' class='flag'>🇬🇧</a>
-            {tg_svg}
-        </div>
+        <div class='top-bar'><a href='/lang/VN' class='flag'>🇻🇳</a><a href='/lang/EN' class='flag'>🇬🇧</a>{tg_svg}</div>
         <audio autoplay loop><source src='https://files.catbox.moe/mcy4cu.mp3'></audio>
         <div class='content-wrapper'><div class='card'><div class='status-badge'>● System Online</div>{content}</div></div>
-        <footer><a href='/admin-login'>@2026 AlexCloud</a></footer>
-        {js}
+        <footer><a href='/admin-login'>@2026 AlexCloud</a></footer>{js}
     </body></html>"""
 
 @app.route('/lang/<lang>')
 def set_lang(lang):
     session['lang'] = lang
-    return redirect('/')
+    return redirect(request.referrer or '/')
 
 @app.route('/')
 def home():
-    l = LANGS.get(session.get('lang', 'VN'), LANGS['VN'])
-    content = f"<h1>{l['title']}</h1><div class='info-box'>{l['game']}</div><div class='info-box'>{l['time']}</div><p style='color:green; font-weight:bold'>{l['status']}</p><a href='/get-key' class='btn'>{l['btn']}</a>"
-    return render_template_string(get_html(content))
+    l = get_l()
+    return render_template_string(get_html(f"<h1>{l['title']}</h1><div class='info-box'>{l['game']}</div><div class='info-box'>{l['time']}</div><p style='color:green; font-weight:bold'>{l['status']}</p><a href='/get-key' class='btn'>{l['btn']}</a>"))
 
 @app.route('/get-key')
 def get_key():
+    l = get_l()
     code = request.args.get('member_code')
     if code == MEMBER_CODE:
         k = generate_unique_key()
         all_keys.append({'key': k, 'tbi': '1', 'day': '1', 'time': datetime.now().strftime("%H:%M")})
         return redirect(f"/verify?key={k}")
-    return render_template_string(get_html("<h1>Xác thực</h1><form action='/get-key' method='GET'><input name='member_code' placeholder='Mã thành viên...' required><button class='btn'>XÁC NHẬN</button></form><a href='/get-key-link' class='btn' style='background:#d9534f'>VƯỢT LINK</a>"))
-
-@app.route('/get-key-link')
-def get_key_link():
-    k = generate_unique_key()
-    all_keys.append({'key': k, 'tbi': '1', 'day': '1', 'time': datetime.now().strftime("%H:%M")})
-    target_url = f"{MY_DOMAIN}/verify?key={k}"
-    try:
-        res = requests.get(f"https://link4m.co/api-shorten/v2?api={LINK4M_API}&url={urllib.parse.quote(target_url)}", timeout=10).json()
-        return redirect(res['shortenedUrl'])
-    except: return "Lỗi API!"
+    return render_template_string(get_html(f"<h1>{l['auth_title']}</h1><form action='/get-key' method='GET'><input name='member_code' placeholder='{l['auth_input']}' required><button class='btn'>{l['auth_btn']}</button></form><a href='/get-key-link' class='btn' style='background:#d9534f'>{l['link_btn']}</a>"))
 
 @app.route('/verify')
 def verify():
+    l = get_l()
     k = request.args.get('key')
-    l = LANGS.get(session.get('lang', 'VN'), LANGS['VN'])
-    return render_template_string(get_html(f"<h1>KEY:</h1><h2 id='keyBox' onclick='copyKey()'>{k}</h2><p>{l['copy']}</p><a href='/' class='btn'>VỀ TRANG CHỦ</a>"))
+    return render_template_string(get_html(f"<h1>{l['key_title']}</h1><h2 id='keyBox' onclick='copyKey()'>{k}</h2><p>{l['copy']}</p><a href='/' class='btn'>{l['back']}</a>"))
 
 @app.route('/admin-login', methods=['GET', 'POST'])
 def admin():
@@ -104,8 +100,7 @@ def admin():
             all_keys.append({'key': generate_unique_key(), 'tbi': request.form.get('tbi'), 'day': request.form.get('day'), 'time': datetime.now().strftime("%H:%M")})
     if session.get('admin'):
         rows = "".join([f"<tr><td>{i['key']}</td><td>{i['tbi']}</td><td>{i['day']}</td><td>{i['time']}</td></tr>" for i in all_keys])
-        form = "<form method='POST'><input name='tbi' placeholder='TBI' required><input name='day' placeholder='Ngày' required><button name='create' value='1' class='btn'>TẠO KEY</button></form>"
-        return render_template_string(get_html(f"<h1>LOG ADMIN</h1>{form}<table><tr><th>KEY</th><th>TBI</th><th>D</th><th>TIME</th></tr>{rows}</table><br><a href='/admin-logout' class='btn' style='background:red'>ĐĂNG XUẤT</a>"))
+        return render_template_string(get_html(f"<h1>LOG ADMIN</h1><form method='POST'><input name='tbi' placeholder='TBI' required><input name='day' placeholder='Ngày' required><button name='create' value='1' class='btn'>TẠO KEY</button></form><table><tr><th>KEY</th><th>TBI</th><th>D</th><th>TIME</th></tr>{rows}</table><br><a href='/admin-logout' class='btn' style='background:red'>ĐĂNG XUẤT</a>"))
     return render_template_string(get_html("<h1>ADMIN</h1><form method='POST'><input name='pin' type='password'><button class='btn'>ĐĂNG NHẬP</button></form>"))
 
 @app.route('/admin-logout')
@@ -114,5 +109,4 @@ def logout():
     return redirect('/')
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
