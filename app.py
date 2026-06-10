@@ -12,7 +12,6 @@ MEMBER_CODE = "123567"
 MY_DOMAIN = "https://sever-key-alexcloud-cheat.onrender.com"
 all_keys = []
 
-# Hàm tạo key không trùng
 def generate_unique_key():
     while True:
         k = f"AlexCloud-{''.join(random.choices(string.ascii_uppercase, k=3))}-{''.join(random.choices(string.digits, k=3))}"
@@ -21,16 +20,35 @@ def generate_unique_key():
 CSS = """
 <style>
     @keyframes bgChange { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
-    body { background: linear-gradient(-45deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); background-size: 400% 400%; animation: bgChange 10s ease infinite; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+    body { background: linear-gradient(-45deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); background-size: 400% 400%; animation: bgChange 10s ease infinite; font-family: sans-serif; display: flex; flex-direction: column; min-height: 100vh; margin: 0; padding: 20px; align-items: center; }
+    .content-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
     .card { background: rgba(255,255,255,0.95); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
     .btn { background: #000; color: #fff; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; border: none; margin-top: 15px; display: block; text-decoration: none; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.7rem; color: #000; }
+    #keyBox { color: red; font-size: 1.5rem; cursor: pointer; border: 2px dashed red; padding: 10px; border-radius: 10px; margin: 15px 0; }
+    footer { padding: 20px; color: #fff; font-weight: bold; }
+    footer a { color: #fff; text-decoration: none; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.7rem; color: #000; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 5px; }
 </style>
 """
 
 def get_html(content):
-    return f"<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>{CSS}</head><body><audio autoplay loop><source src='https://files.catbox.moe/mcy4cu.mp3'></audio><div class='card'>{content}</div><footer style='margin-top:20px'><a href='/admin-login' style='color:#fff;text-decoration:none'>@2026 AlexCloud</a></footer></body></html>"
+    js = """
+    <script>
+        function copyKey() {
+            var k = document.getElementById('keyBox').innerText;
+            navigator.clipboard.writeText(k);
+            alert('Đã copy: ' + k);
+        }
+    </script>
+    """
+    return f"""<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>{CSS}</head>
+    <body>
+        <audio autoplay loop><source src='https://files.catbox.moe/mcy4cu.mp3'></audio>
+        <div class='content-wrapper'><div class='card'>{content}</div></div>
+        <footer><a href='/admin-login'>@2026 AlexCloud</a></footer>
+        {js}
+    </body></html>"""
 
 @app.route('/')
 def home():
@@ -57,7 +75,8 @@ def get_key_link():
 
 @app.route('/verify')
 def verify():
-    return render_template_string(get_html(f"<h1>KEY:</h1><h2 style='color:red'>{request.args.get('key')}</h2><a href='/' class='btn'>VỀ TRANG CHỦ</a>"))
+    k = request.args.get('key')
+    return render_template_string(get_html(f"<h1>KEY CỦA BẠN:</h1><h2 id='keyBox' onclick='copyKey()'>{k}</h2><p>(Nhấn vào Key để copy)</p><a href='/' class='btn'>VỀ TRANG CHỦ</a>"))
 
 @app.route('/admin-login', methods=['GET', 'POST'])
 def admin():
@@ -65,7 +84,6 @@ def admin():
         if request.form.get('pin') == ADMIN_PIN: session['admin'] = True
         elif session.get('admin') and request.form.get('create'):
             all_keys.append({'key': generate_unique_key(), 'tbi': request.form.get('tbi'), 'day': request.form.get('day'), 'time': datetime.now().strftime("%H:%M")})
-    
     if session.get('admin'):
         rows = "".join([f"<tr><td>{i['key']}</td><td>{i['tbi']}</td><td>{i['day']}</td><td>{i['time']}</td></tr>" for i in all_keys])
         form = "<form method='POST'><input name='tbi' placeholder='TBI' required><input name='day' placeholder='Ngày' required><button name='create' value='1' class='btn'>TẠO KEY MỚI</button></form>"
@@ -78,4 +96,5 @@ def logout():
     return redirect('/')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
