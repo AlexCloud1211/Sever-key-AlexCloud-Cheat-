@@ -61,7 +61,7 @@ def get_html(content):
     return f"""<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>{CSS}</head>
     <body>
         <div class='top-bar'><a href='/lang/VN' class='flag'>🇻🇳</a><a href='/lang/EN' class='flag'>🇬🇧</a>{tg_svg}</div>
-        <audio autoplay loop><source src='https://files.catbox.moe/mcy4cu.mp3'></audio>
+        <audio autoplay loop><source src='https://files.catbox.moe/5rqwul.mp3'></audio>
         <div class='content-wrapper'><div class='card'><div class='status-badge'>● System Online</div>{content}</div></div>
         <footer><a href='/admin-login'>@2026 AlexCloud</a></footer>{js}
     </body></html>"""
