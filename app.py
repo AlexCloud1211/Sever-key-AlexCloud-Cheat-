@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template_string, request, redirect, session
 import random, string, os, requests, urllib.parse
 from datetime import datetime, timedelta
@@ -7,30 +8,27 @@ app.secret_key = 'alexcloud_secret_key_2026'
 
 # --- CẤU HÌNH ---
 LINK4M_API = "6a27be48f348053ba11f3502"
-ADMIN_PIN = "121113"        
-PASS_PHU = "DanhNgu"        
+ADMIN_PIN = "121113"
+PASS_PHU = "DanhNgu"
 MEMBER_CODE = "123567"
-# Đảm bảo MY_DOMAIN là địa chỉ web của bạn trên Render (Không có dấu / ở cuối)
+# ĐIỀN ĐÚNG LINK WEB CỦA BẠN TẠI ĐÂY (KHÔNG DẤU / Ở CUỐI)
 MY_DOMAIN = "https://sever-key-alexcloud-cheat.onrender.com"
 all_keys = []
 
 def get_vn_time():
     return (datetime.utcnow() + timedelta(hours=7)).strftime("%H:%M:%S")
 
+# Hàm tạo link mới mỗi lần nhấn
 def get_bypass_link():
-    # Thêm tham số ngẫu nhiên để ép Link4m tạo link mới mỗi lần gọi
     ts = random.randint(100000, 999999)
-    # Mã hóa URL đích để đảm bảo API nhận diện đúng
+    # Thêm tham số ts ngẫu nhiên để API không bị trùng link
     dest = f"{MY_DOMAIN}/get-key?auto_key=true&ts={ts}"
     target_url = urllib.parse.quote(dest)
     api_url = f"https://link4m.co/api-shorten/v2?api={LINK4M_API}&url={target_url}"
     try:
         response = requests.get(api_url, timeout=10).json()
-        if response.get('status') == 'success':
-            return response.get('shortenedUrl')
-        return "#"
-    except Exception as e:
-        print(f"Error: {e}")
+        return response.get('shortenedUrl', '#')
+    except:
         return "#"
 
 LANGS = {
@@ -96,6 +94,7 @@ def home():
 
 @app.route('/get-key', methods=['GET', 'POST'])
 def get_key():
+    # Tự động cấp Key sau khi vượt link thành công
     if request.args.get('auto_key') == "true":
         k = generate_unique_key()
         all_keys.append({'key': k, 'tbi': '1', 'day': '1', 'time': get_vn_time()})
