@@ -10,6 +10,7 @@ LINK4M_API = "6a27be48f348053ba11f3502"
 ADMIN_PIN = "121113"        
 PASS_PHU = "DanhNgu"        
 MEMBER_CODE = "123567"
+# Đảm bảo MY_DOMAIN là địa chỉ web của bạn trên Render (Không có dấu / ở cuối)
 MY_DOMAIN = "https://sever-key-alexcloud-cheat.onrender.com"
 all_keys = []
 
@@ -17,13 +18,19 @@ def get_vn_time():
     return (datetime.utcnow() + timedelta(hours=7)).strftime("%H:%M:%S")
 
 def get_bypass_link():
+    # Thêm tham số ngẫu nhiên để ép Link4m tạo link mới mỗi lần gọi
     ts = random.randint(100000, 999999)
-    target_url = urllib.parse.quote(f"{MY_DOMAIN}/get-key?auto_key=true&ts={ts}")
+    # Mã hóa URL đích để đảm bảo API nhận diện đúng
+    dest = f"{MY_DOMAIN}/get-key?auto_key=true&ts={ts}"
+    target_url = urllib.parse.quote(dest)
     api_url = f"https://link4m.co/api-shorten/v2?api={LINK4M_API}&url={target_url}"
     try:
-        response = requests.get(api_url, timeout=5).json()
-        return response.get('shortenedUrl', '#')
-    except:
+        response = requests.get(api_url, timeout=10).json()
+        if response.get('status') == 'success':
+            return response.get('shortenedUrl')
+        return "#"
+    except Exception as e:
+        print(f"Error: {e}")
         return "#"
 
 LANGS = {
@@ -53,7 +60,6 @@ CSS = """
     @keyframes bgChange { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
     body { background: linear-gradient(-45deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); background-size: 400% 400%; animation: bgChange 10s ease infinite; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; min-height: 100vh; margin: 0; padding: 20px; align-items: center; }
     .top-bar { position: absolute; top: 15px; right: 15px; display: flex; gap: 12px; align-items: center; }
-    .tele-icon { color: white; font-size: 24px; text-decoration: none; }
     .card { background: rgba(255,255,255,0.95); padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .btn { background: #000; color: #fff; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; border: none; margin-top: 15px; display: block; text-decoration: none; }
     .btn-red { background: #d9534f; }
@@ -63,13 +69,12 @@ CSS = """
 """
 
 def get_html(content):
-    # Thêm FontAwesome để hiển thị icon Telegram chuẩn
     js = "<script>function copyText(t){navigator.clipboard.writeText(t);}</script>"
     return f"""<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     {CSS}</head><body>
         <div class='top-bar'>
-            <a href='https://t.me/AlexCloud3' target='_blank' class='tele-icon'><i class='fab fa-telegram'></i></a>
+            <a href='https://t.me/AlexCloud3' target='_blank' style='color:white; font-size:24px;'><i class='fab fa-telegram'></i></a>
             <a href='/lang/VN' style='color:white'>🇻🇳</a><a href='/lang/EN' style='color:white'>🇬🇧</a>
         </div>
         <audio autoplay loop><source src='https://files.catbox.moe/5rqwul.mp3'></audio>
