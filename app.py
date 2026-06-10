@@ -16,7 +16,6 @@ all_keys = []
 def get_vn_time():
     return (datetime.utcnow() + timedelta(hours=7)).strftime("%H:%M:%S")
 
-# Dữ liệu ngôn ngữ
 LANGS = {
     'VN': {
         'title': 'AlexCloud Cheat', 'game': 'Game: Free Fire', 'time': 'Thời hạn: 1 Ngày', 
@@ -51,18 +50,17 @@ CSS = """
     .card { background: rgba(255,255,255,0.95); padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .btn { background: #000; color: #fff; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; border: none; margin-top: 15px; display: block; text-decoration: none; transition: 0.3s; }
     .btn:hover { background: #333; transform: scale(1.02); }
-    #keyBox { color: #d00; font-size: 1.6rem; cursor: pointer; border: 2px dashed #d00; padding: 12px; border-radius: 10px; margin: 15px 0; font-weight: bold; }
+    #keyBox { color: #d00; font-size: 1.6rem; border: 2px dashed #d00; padding: 12px; border-radius: 10px; margin: 15px 0; font-weight: bold; word-break: break-all; }
     footer { padding: 20px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; }
     footer a { color: #fff; text-decoration: none; }
-    .info-box { font-weight: bold; font-size: 1.1rem; color: #333; margin: 5px 0; }
     .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; background: #28a745; color: white; font-size: 0.8rem; margin-bottom: 10px; }
 </style>
 """
 
 def get_html(content):
     tg_svg = """<a href='https://t.me/AlexCloud3' target='_blank'><svg class='tg-icon' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.07-.19-.05-.27-.03-.12.02-1.93 1.23-5.45 3.62-.51.35-.98.52-1.39.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.46-.41-1.4-.85.03-.23.35-.47 1.01-.71 3.93-1.72 6.55-2.86 7.85-3.41 3.74-1.59 4.52-1.86 5.02-1.87.11 0 .37.03.54.17.14.12.19.28.21.45-.02.07-.03.14-.05.21z'/></svg></a>"""
-    js = "<script>function copyKey(){var k=document.getElementById('keyBox').innerText;navigator.clipboard.writeText(k);alert('Copy: '+k);}</script>"
-    return f"""<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>{CSS}</head>
+    js = "<script>function copyKey(){var k=document.getElementById('keyBox').innerText;navigator.clipboard.writeText(k);alert('Đã copy: '+k);}</script>"
+    return f"""<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>{CSS}</head>
     <body>
         <div class='top-bar'><a href='/lang/VN' class='flag'>🇻🇳</a><a href='/lang/EN' class='flag'>🇬🇧</a>{tg_svg}</div>
         <audio autoplay loop><source src='https://files.catbox.moe/5rqwul.mp3'></audio>
@@ -78,7 +76,7 @@ def set_lang(lang):
 @app.route('/')
 def home():
     l = get_l()
-    return render_template_string(get_html(f"<h1>{l['title']}</h1><div class='info-box'>{l['game']}</div><div class='info-box'>{l['time']}</div><p style='color:green; font-weight:bold'>{l['status']}</p><a href='/get-key' class='btn'>{l['btn']}</a>"))
+    return render_template_string(get_html(f"<h1>{l['title']}</h1><p>{l['game']}</p><p>{l['time']}</p><p style='color:green; font-weight:bold'>{l['status']}</p><a href='/get-key' class='btn'>{l['btn']}</a>"))
 
 @app.route('/get-key')
 def get_key():
@@ -86,7 +84,6 @@ def get_key():
     code = request.args.get('member_code')
     if code == MEMBER_CODE:
         k = generate_unique_key()
-        # Lưu thời gian với giây
         all_keys.append({'key': k, 'tbi': '1', 'day': '1', 'time': get_vn_time()})
         return redirect(f"/verify?key={k}")
     return render_template_string(get_html(f"<h1>{l['auth_title']}</h1><form action='/get-key' method='GET'><input name='member_code' placeholder='{l['auth_input']}' required><button class='btn'>{l['auth_btn']}</button></form><a href='/get-key-link' class='btn' style='background:#d9534f'>{l['link_btn']}</a>"))
@@ -95,7 +92,7 @@ def get_key():
 def verify():
     l = get_l()
     k = request.args.get('key')
-    return render_template_string(get_html(f"<h1>{l['key_title']}</h1><h2 id='keyBox' onclick='copyKey()'>{k}</h2><p>{l['copy']}</p><a href='/' class='btn'>{l['back']}</a>"))
+    return render_template_string(get_html(f"<h1>{l['key_title']}</h1><h2 id='keyBox'>{k}</h2><button class='btn' style='background:#d00' onclick='copyKey()'>Ấn Vô = die</button><p>{l['copy']}</p><a href='/' class='btn'>{l['back']}</a>"))
 
 @app.route('/admin-login', methods=['GET', 'POST'])
 def admin():
@@ -104,9 +101,8 @@ def admin():
         elif session.get('admin') and request.form.get('create'):
             all_keys.append({'key': generate_unique_key(), 'tbi': request.form.get('tbi'), 'day': request.form.get('day'), 'time': get_vn_time()})
     if session.get('admin'):
-        # Tách mỗi key ra một dòng bằng cách dùng thẻ <div> bao quanh từng hàng
-        rows = "".join([f"<div style='border-bottom: 1px solid #ccc; padding: 8px; text-align: left;'><b>Key:</b> {i['key']} <br> <b>TBI:</b> {i['tbi']} | <b>D:</b> {i['day']} | <b>TIME:</b> {i['time']}</div>" for i in all_keys])
-        return render_template_string(get_html(f"<h1>LOG ADMIN</h1><form method='POST'><input name='tbi' placeholder='TBI' required><input name='day' placeholder='Ngày' required><button name='create' value='1' class='btn'>TẠO KEY</button></form><div style='margin-top:20px;'>{rows}</div><br><a href='/admin-logout' class='btn' style='background:red'>ĐĂNG XUẤT</a>"))
+        rows = "".join([f"<div style='border-bottom:1px solid #ccc; padding:8px; text-align:left; font-size:0.9rem'><b>Key:</b> {i['key']}<br><b>TBI:</b> {i['tbi']} | <b>D:</b> {i['day']} | <b>TIME:</b> {i['time']}</div>" for i in all_keys])
+        return render_template_string(get_html(f"<h1>LOG ADMIN</h1><form method='POST'><input name='tbi' placeholder='TBI' required><input name='day' placeholder='Ngày' required><button name='create' value='1' class='btn'>TẠO KEY</button></form><div style='margin-top:15px'>{rows}</div><br><a href='/admin-logout' class='btn' style='background:red'>ĐĂNG XUẤT</a>"))
     return render_template_string(get_html("<h1>ADMIN</h1><form method='POST'><input name='pin' type='password'><button class='btn'>ĐĂNG NHẬP</button></form>"))
 
 @app.route('/admin-logout')
