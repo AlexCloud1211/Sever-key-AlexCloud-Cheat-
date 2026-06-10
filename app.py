@@ -11,6 +11,7 @@ PASS_PHU = "DanhNgu"        # Admin phụ
 MEMBER_CODE = "123567"      # Mã thành viên
 all_keys = []
 
+# Hàm lấy giờ Việt Nam
 def get_vn_time():
     return (datetime.utcnow() + timedelta(hours=7)).strftime("%H:%M:%S")
 
@@ -19,13 +20,13 @@ def generate_unique_key():
         k = f"AlexCloud-{''.join(random.choices(string.ascii_uppercase, k=3))}-{''.join(random.choices(string.digits, k=3))}"
         if not any(item['key'] == k for item in all_keys): return k
 
+# --- GIAO DIỆN ---
 CSS = """
 <style>
     @keyframes bgChange { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
     body { background: linear-gradient(-45deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); background-size: 400% 400%; animation: bgChange 10s ease infinite; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; min-height: 100vh; margin: 0; padding: 20px; align-items: center; }
-    .top-bar { position: absolute; top: 15px; right: 15px; display: flex; gap: 12px; z-index: 100; }
     .card { background: rgba(255,255,255,0.95); padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-    .btn { background: #000; color: #fff; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; border: none; margin-top: 15px; display: block; text-decoration: none; }
+    .btn { background: #000; color: #fff; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; border: none; margin-top: 15px; display: block; text-decoration: none; text-align: center; }
     .btn-red { background: #d9534f; }
     .key-text { color: #007bff; font-weight: bold; cursor: pointer; text-decoration: underline; font-size: 1.5rem; display: block; margin: 15px 0; }
     .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; background: #28a745; color: white; font-size: 0.8rem; margin-bottom: 10px; }
@@ -33,8 +34,20 @@ CSS = """
 """
 
 def get_html(content, error=""):
-    js = "<script>function copyText(t){navigator.clipboard.writeText(t);}</script>"
-    return f"<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>{CSS}</head><body><div class='top-bar'><a href='/lang/VN' style='text-decoration:none'>🇻🇳</a><a href='/lang/EN' style='text-decoration:none'>🇬🇧</a></div><audio autoplay loop><source src='https://files.catbox.moe/5rqwul.mp3'></audio><div style='flex:1; display:flex; align-items:center; justify-content:center; width:100%'><div class='card'><div class='status-badge'>● System Online</div>{error}{content}</div></div><footer><a href='/admin-login' style='color:white'>@2026 AlexCloud</a></footer>{js}</body></html>"
+    # JS: Copy và hiệu ứng chờ tạo link
+    js = """
+    <script>
+        function copyText(t){navigator.clipboard.writeText(t);}
+        function loadingLink(btn) {
+            btn.innerText = "Đang tạo link, vui lòng chờ...";
+            btn.style.pointerEvents = "none";
+            btn.style.opacity = "0.7";
+            setTimeout(function() {
+                window.location.href = "https://google.com"; // THAY LINK VƯỢT CỦA BẠN VÀO ĐÂY
+            }, 7000);
+        }
+    </script>"""
+    return f"<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>{CSS}</head><body><audio autoplay loop><source src='https://files.catbox.moe/5rqwul.mp3'></audio><div style='flex:1; display:flex; align-items:center; justify-content:center; width:100%'><div class='card'><div class='status-badge'>● System Online</div>{error}{content}</div></div><footer><a href='/admin-login' style='color:white'>@2026 AlexCloud</a></footer>{js}</body></html>"
 
 @app.route('/')
 def home():
@@ -44,12 +57,12 @@ def home():
 def get_key():
     code = request.args.get('member_code')
     if code is None:
-        return render_template_string(get_html("<h1>Xác thực</h1><form action='/get-key'><input name='member_code' placeholder='Nhập mã thành viên...' required><button class='btn'>XÁC NHẬN</button></form><a href='#' class='btn btn-red'>Vượt link để có key</a>"))
+        return render_template_string(get_html("<h1>Xác thực</h1><form action='/get-key'><input name='member_code' placeholder='Nhập mã thành viên...' required><button class='btn'>XÁC NHẬN</button></form><button class='btn btn-red' onclick='loadingLink(this)'>Vượt link để có key</button>"))
     if code == MEMBER_CODE:
         k = generate_unique_key()
         all_keys.append({'key': k, 'tbi': '1', 'day': '1', 'time': get_vn_time()})
         return redirect(f"/verify?key={k}")
-    return render_template_string(get_html("<h1>Sai Rồi Kìa em Out Ra get đi</h1><a href='/get-key' class='btn'>VỀ LẠI</a><a href='#' class='btn btn-red'>Vượt link để có key</a>"))
+    return render_template_string(get_html("<h1>Sai Rồi Kìa em Out Ra get đi</h1><a href='/get-key' class='btn'>VỀ LẠI</a><button class='btn btn-red' onclick='loadingLink(this)'>Vượt link để có key</button>"))
 
 @app.route('/verify')
 def verify():
