@@ -1,93 +1,91 @@
-from flask import Flask, render_template_string, request, redirect, session
-from flask_sqlalchemy import SQLAlchemy  # ### THÊM VÀO
-import random, string, os, requests, urllib.parse
-from datetime import datetime, timedelta
+import streamlit as st
+import sqlite3
+import random
+import string
+import requests
 
-app = Flask(__name__)
-app.secret_key = 'alexcloud_secret_key_2026'
+# --- CẤU HÌNH GIAO DIỆN ---
+st.set_page_config(page_title="AlexCloud Portal", layout="centered")
 
-# --- CẤU HÌNH DATABASE (THÊM VÀO) ---
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///keys.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
-
-class KeyModel(db.Model): # ### THÊM VÀO
-    id = db.Column(db.Integer, primary_key=True)
-    key = db.Column(db.String(50), unique=True, nullable=False)
-    tbi = db.Column(db.String(10))
-    day = db.Column(db.String(10))
-    time = db.Column(db.String(20))
-
-with app.app_context(): # ### THÊM VÀO
-    db.create_all()
-
-# --- CẤU HÌNH ---
-LINK4M_API = "6a27be48f348053ba11f3502"
-ADMIN_PIN = "121113"
-PASS_PHU = "DanhNgu"
-MEMBER_CODE = "123567"
-MY_DOMAIN = "https://sever-key-alexcloud-cheat.onrender.com"
-# all_keys = []  # ### KHÔNG CẦN DÙNG NỮA
-
-def get_vn_time():
-    return (datetime.utcnow() + timedelta(hours=7)).strftime("%H:%M:%S")
-
-def generate_unique_key():
-    while True:
-        k = f"AlexCloud-{''.join(random.choices(string.ascii_uppercase, k=3))}-{''.join(random.choices(string.digits, k=3))}"
-        if not KeyModel.query.filter_by(key=k).first(): return k # ### KIỂM TRA TRONG DB
-
-# ... (Giữ nguyên các hàm get_bypass_link, LANGS, get_l, CSS, get_html, set_lang, home) ...
-
-@app.route('/get-key', methods=['GET', 'POST'])
-def get_key():
-    if request.args.get('auto_key') == "true":
-        k = generate_unique_key()
-        new_k = KeyModel(key=k, tbi='1', day='1', time=get_vn_time()) # ### THÊM VÀO DB
-        db.session.add(new_k); db.session.commit()
-        return redirect(f"/verify?key={k}")
-
-    l = get_l()
-    code = request.args.get('member_code')
-    bypass = get_bypass_link()
+# CSS Tùy chỉnh: Trắng chủ đạo, bo góc, chữ to
+st.markdown("""
+    <style>
+    .stApp { background-color: #ffffff; }
+    .css-1v3fvcr, .main { background-color: #ffffff; }
     
-    if code == MEMBER_CODE:
-        k = generate_unique_key()
-        new_k = KeyModel(key=k, tbi='1', day='1', time=get_vn_time()) # ### THÊM VÀO DB
-        db.session.add(new_k); db.session.commit()
-        return redirect(f"/verify?key={k}")
+    /* Bo góc cho các thành phần */
+    div[data-testid="stButton"] button {
+        border-radius: 15px !important;
+        border: 2px solid #e0e0e0;
+        font-size: 20px !important;
+        background-color: #f9f9f9;
+    }
     
-    return render_template_string(get_html(f"<h1>{l['auth_title']}</h1><form action='/get-key'><input name='member_code' placeholder='{l['auth_input']}' required><button class='btn'>{l['auth_btn']}</button></form><a href='{bypass}' class='btn btn-red'>{l['link_btn']}</a>"))
-
-@app.route('/verify')
-def verify():
-    k = request.args.get('key', '---')
-    return render_template_string(get_html(f"<h1>KEY CỦA BẠN:</h1><h2 id='k'>{k}</h2><button class='btn' onclick=\"copyText(document.getElementById('k').innerText)\">Nhấn vô = có key</button>"))
-
-@app.route('/admin-login', methods=['GET', 'POST'])
-def admin():
-    if request.method == 'POST':
-        if request.form.get('pin') == ADMIN_PIN: session['admin'] = 'chinh'
-        elif request.form.get('pin') == PASS_PHU: session['admin'] = 'phu'
+    /* Chữ to rõ cho người cận */
+    .big-font { font-size: 28px !important; font-weight: bold; color: #333; }
+    .normal-text { font-size: 20px !important; color: #555; }
     
-    if session.get('admin'):
-        if request.method == 'POST' and request.form.get('create'):
-            tbi = request.form.get('tbi') if session['admin'] == 'chinh' else '1'
-            day = request.form.get('day') if session['admin'] == 'chinh' else '1'
-            new_k = KeyModel(key=generate_unique_key(), tbi=tbi, day=day, time=get_vn_time())
-            db.session.add(new_k); db.session.commit()
-        
-        if request.method == 'POST' and request.form.get('del') and session['admin'] == 'chinh':
-            KeyModel.query.filter_by(key=request.form.get('del')).delete() # ### XÓA TRONG DB
-            db.session.commit()
+    /* Ô nhập liệu */
+    input { border-radius: 10px !important; font-size: 18px !important; }
+    </style>
+    """, unsafe_allow_html=True)
 
-        # ### LẤY DỮ LIỆU TỪ DB
-        keys_from_db = KeyModel.query.all()
-        rows = "".join([f"<div style='border-bottom:1px solid #ccc; padding:8px; text-align:left;'>KEY: <span class='key-text' onclick=\"copyText('{i.key}')\">{i.key}</span><br>TBI: {i.tbi} | D: {i.day} | {i.time} {'<form method=POST style=display:inline><button name=del value='+i.key+'>Xóa</button></form>' if session['admin']=='chinh' else ''}</div>" for i in keys_from_db])
-        
-        form_tao = "<form method='POST'><input name='tbi' placeholder='TBI' required><input name='day' placeholder='Ngày' required><button name='create' value='1' class='btn'>TẠO KEY</button></form>" if session['admin'] == 'chinh' else "<form method='POST'><button name='create' value='1' class='btn'>TẠO KEY (Auto 1-1)</button></form>"
-        return render_template_string(get_html(f"<h1>ADMIN {session['admin'].upper()}</h1>{form_tao}<div style='margin-top:15px'>{rows}</div><br><a href='/admin-logout' class='btn' style='background:red'>ĐĂNG XUẤT</a>"))
-    
-    return render_template_string(get_html("<h1>LOGIN ADMIN</h1><form method='POST'><input name='pin' type='password' placeholder='Mật khẩu...' required><button class='btn'>ĐĂNG NHẬP</button></form>"))
+# --- DATABASE ---
+conn = sqlite3.connect('alexcloud.db', check_same_thread=False)
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS keys 
+             (id INTEGER PRIMARY KEY, key_val TEXT, devices INTEGER, duration INTEGER, member_code TEXT)''')
+conn.commit()
 
-# ... (Phần cuối giữ nguyên)
+# --- CÁC HÀM ---
+def shorten_link(url):
+    api_token = "6a27be48f348053ba11f3502"
+    api_url = f"https://link4m.co/api-shorten/v2?api={api_token}&url={url}"
+    try:
+        resp = requests.get(api_url).json()
+        return resp.get('shortenedUrl', 'Lỗi link')
+    except: return "Lỗi hệ thống"
+
+# --- GIAO DIỆN CHÍNH ---
+st.markdown('<p class="big-font" style="text-align: center;">🌐 AlexCloud @2026</p>', unsafe_allow_html=True)
+
+# Logo & Liên kết
+col1, col2, col3 = st.columns([1, 1, 2])
+col1.write("🇻🇳 VN")
+col2.write("🇺🇸 EN")
+col3.markdown("[✈️ Telegram Support](https://t.me/AlexCloud3)")
+
+# Phần Game
+st.markdown("---")
+st.header("🎮 Free Fire Max")
+
+tab1, tab2 = st.tabs(["Get Key", "Nhập Mã Thành Viên"])
+
+with tab1:
+    if st.button("Nhấn để Get Key"):
+        # Tạo link vượt 2 lần
+        l1 = shorten_link("https://your-key-page.com")
+        l2 = shorten_link(l1)
+        st.write(f"Link vượt 1: {l1}")
+        st.write(f"Link vượt 2: {l2}")
+
+with tab2:
+    m_code = st.text_input("Nhập mã thành viên:")
+    if st.button("Xác nhận"):
+        st.success("Mã hợp lệ! Đang chuyển hướng...")
+
+# --- ADMIN PANEL ---
+st.sidebar.markdown("---")
+st.sidebar.header("🔐 Admin Panel")
+admin_pass = st.sidebar.text_input("Admin Pass:", type="password")
+
+if admin_pass == "121113":
+    st.sidebar.success("Chào Admin!")
+    # Quản lý Key
+    with st.sidebar.form("add_key"):
+        devs = st.number_input("Số thiết bị", 1, 10)
+        days = st.number_input("Số ngày", 1, 30)
+        if st.form_submit_button("Tạo Key"):
+            new_key = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+            st.sidebar.code(new_key)
+            st.sidebar.info("Nhấn vào Key để copy")
