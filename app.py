@@ -1,91 +1,129 @@
-import streamlit as st
-import sqlite3
-import random
-import string
-import requests
+from flask import Flask, render_template_string, request, redirect, session, url_for, jsonify, abort
+from flask_sqlalchemy import SQLAlchemy
+import random, string, os, requests, urllib.parse, logging, time
+from datetime import datetime, timedelta
 
-# --- CẤU HÌNH GIAO DIỆN ---
-st.set_page_config(page_title="AlexCloud Portal", layout="centered")
+# --- THIẾT LẬP LOGGING CHUYÊN NGHIỆP ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# CSS Tùy chỉnh: Trắng chủ đạo, bo góc, chữ to
-st.markdown("""
-    <style>
-    .stApp { background-color: #ffffff; }
-    .css-1v3fvcr, .main { background-color: #ffffff; }
-    
-    /* Bo góc cho các thành phần */
-    div[data-testid="stButton"] button {
-        border-radius: 15px !important;
-        border: 2px solid #e0e0e0;
-        font-size: 20px !important;
-        background-color: #f9f9f9;
-    }
-    
-    /* Chữ to rõ cho người cận */
-    .big-font { font-size: 28px !important; font-weight: bold; color: #333; }
-    .normal-text { font-size: 20px !important; color: #555; }
-    
-    /* Ô nhập liệu */
-    input { border-radius: 10px !important; font-size: 18px !important; }
-    </style>
-    """, unsafe_allow_html=True)
+app = Flask(__name__)
+app.secret_key = os.urandom(24) # Secret key ngẫu nhiên an toàn hơn
 
-# --- DATABASE ---
-conn = sqlite3.connect('alexcloud.db', check_same_thread=False)
-c = conn.cursor()
-c.execute('''CREATE TABLE IF NOT EXISTS keys 
-             (id INTEGER PRIMARY KEY, key_val TEXT, devices INTEGER, duration INTEGER, member_code TEXT)''')
-conn.commit()
+# --- CẤU HÌNH DATABASE VỚI POSTGRESQL (SẴN SÀNG CHO RENDER) ---
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///alexcloud.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
-# --- CÁC HÀM ---
-def shorten_link(url):
-    api_token = "6a27be48f348053ba11f3502"
-    api_url = f"https://link4m.co/api-shorten/v2?api={api_token}&url={url}"
+# --- CÁC MODELS DỮ LIỆU ---
+class AlexKey(db.Model):
+    __tablename__ = 'alex_keys'
+    id = db.Column(db.Integer, primary_key=True)
+    key_value = db.Column(db.String(64), unique=True, nullable=False)
+    member_code = db.Column(db.String(64), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expiry = db.Column(db.DateTime, nullable=False)
+    max_devices = db.Column(db.Integer, default=1)
+    used_devices = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(20), default="active")
+
+class SystemLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    action = db.Column(db.String(255))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+with app.app_context():
+    db.create_all()
+
+# --- HẰNG SỐ CẤU HÌNH ---
+LINK4M_API = "6a27be48f348053ba11f3502"
+ADMIN_PIN = "121113"
+MY_DOMAIN = "https://sever-key-alexcloud-cheat.onrender.com"
+
+# --- CÁC HÀM XỬ LÝ KỸ THUẬT ---
+def generate_complex_key():
+    parts = [''.join(random.choices(string.ascii_uppercase + string.digits, k=5)) for _ in range(4)]
+    return f"AC-{'-'.join(parts)}"
+
+def log_action(msg):
+    db.session.add(SystemLog(action=msg))
+    db.session.commit()
+
+def call_bypass_api(url):
     try:
-        resp = requests.get(api_url).json()
-        return resp.get('shortenedUrl', 'Lỗi link')
-    except: return "Lỗi hệ thống"
+        r = requests.get(f"https://link4m.co/api-shorten/v2?api={LINK4M_API}&url={url}", timeout=10)
+        return r.json().get('shortenedUrl', url)
+    except Exception as e:
+        logging.error(f"API Error: {e}")
+        return url
 
-# --- GIAO DIỆN CHÍNH ---
-st.markdown('<p class="big-font" style="text-align: center;">🌐 AlexCloud @2026</p>', unsafe_allow_html=True)
+# --- GIAO DIỆN HỆ THỐNG (CSS & HTML) ---
+UI_HEADER = """
+<link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
+<style>
+    body { background: #f0f2f5; font-size: 20px; }
+    .main-box { background: white; border-radius: 30px; padding: 50px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+    .btn-lg { border-radius: 15px; padding: 20px; font-weight: bold; }
+    .admin-nav { background: #343a40; color: white; padding: 20px; border-radius: 15px; margin-bottom: 30px; }
+</style>
+"""
 
-# Logo & Liên kết
-col1, col2, col3 = st.columns([1, 1, 2])
-col1.write("🇻🇳 VN")
-col2.write("🇺🇸 EN")
-col3.markdown("[✈️ Telegram Support](https://t.me/AlexCloud3)")
+# --- ROUTES CHÍNH ---
+@app.route('/')
+def index():
+    return render_template_string(UI_HEADER + """
+    <div class='container mt-5'><div class='main-box text-center'>
+        <h1>🌐 AlexCloud @2026</h1>
+        <p>Hệ thống quản lý key cao cấp</p>
+        <a href='/get-key' class='btn btn-primary btn-lg w-100'>LẤY KEY NGAY</a>
+        <div class='mt-5'>
+            <input type='password' id='pin' class='form-control' placeholder='Admin PIN'>
+            <button class='btn btn-dark mt-2 w-100' onclick="if(document.getElementById('pin').value=='121113') window.location.href='/admin-panel'">Truy cập Admin</button>
+        </div>
+    </div></div>""")
 
-# Phần Game
-st.markdown("---")
-st.header("🎮 Free Fire Max")
+@app.route('/get-key')
+def get_key_flow():
+    # Vượt 2 lần
+    link1 = call_bypass_api(f"{MY_DOMAIN}/verify-link")
+    link2 = call_bypass_api(link1)
+    return render_template_string(UI_HEADER + f"""
+    <div class='container mt-5 text-center'>
+        <h1>Vượt Link Bước 2</h1>
+        <a href='{link2}' class='btn btn-danger btn-lg'>NHẤN ĐỂ NHẬN KEY</a>
+    </div>""")
 
-tab1, tab2 = st.tabs(["Get Key", "Nhập Mã Thành Viên"])
+@app.route('/verify-link')
+def verify():
+    k = generate_complex_key()
+    new_k = AlexKey(key_value=k, expiry=datetime.utcnow() + timedelta(days=1))
+    db.session.add(new_k)
+    db.session.commit()
+    log_action(f"Generated key: {k}")
+    return redirect(url_for('result', key=k))
 
-with tab1:
-    if st.button("Nhấn để Get Key"):
-        # Tạo link vượt 2 lần
-        l1 = shorten_link("https://your-key-page.com")
-        l2 = shorten_link(l1)
-        st.write(f"Link vượt 1: {l1}")
-        st.write(f"Link vượt 2: {l2}")
+@app.route('/result')
+def result():
+    return render_template_string(UI_HEADER + f"""
+    <div class='container mt-5'><div class='main-box text-center'>
+        <h1>KEY CỦA BẠN:</h1>
+        <h2 class='text-success'>{request.args.get('key')}</h2>
+        <button class='btn btn-outline-secondary' onclick='navigator.clipboard.writeText("{request.args.get('key')}")'>Copy Key</button>
+    </div></div>""")
 
-with tab2:
-    m_code = st.text_input("Nhập mã thành viên:")
-    if st.button("Xác nhận"):
-        st.success("Mã hợp lệ! Đang chuyển hướng...")
+@app.route('/admin-panel')
+def admin():
+    keys = AlexKey.query.all()
+    return render_template_string(UI_HEADER + f"""
+    <div class='container mt-5'>
+        <div class='admin-nav'><h2>Quản trị AlexCloud</h2></div>
+        <table class='table table-hover'>
+            <thead><tr><th>Key</th><th>Hạn</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+                {"".join([f"<tr><td>{k.key_value}</td><td>{k.expiry}</td><td>{k.status}</td></tr>" for k in keys])}
+            </tbody>
+        </table>
+    </div>""")
 
-# --- ADMIN PANEL ---
-st.sidebar.markdown("---")
-st.sidebar.header("🔐 Admin Panel")
-admin_pass = st.sidebar.text_input("Admin Pass:", type="password")
-
-if admin_pass == "121113":
-    st.sidebar.success("Chào Admin!")
-    # Quản lý Key
-    with st.sidebar.form("add_key"):
-        devs = st.number_input("Số thiết bị", 1, 10)
-        days = st.number_input("Số ngày", 1, 30)
-        if st.form_submit_button("Tạo Key"):
-            new_key = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
-            st.sidebar.code(new_key)
-            st.sidebar.info("Nhấn vào Key để copy")
+if __name__ == '__main__':
+    # Chạy hệ thống
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
